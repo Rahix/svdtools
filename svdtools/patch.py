@@ -334,8 +334,9 @@ class Device:
                 if value.tag in ("name", "baseAddress", "interrupt"):
                     tag = pcopy.find(value.tag)
                     if tag is not None:
-                        pcopy.remove(tag)
-                    pcopy.append(value)
+                        tag.text = value.text
+                    else:
+                        pcopy.append(value)
             parent.remove(ptag)
         parent.append(pcopy)
 
@@ -530,9 +531,9 @@ class Peripheral:
                 )
         rnew = ET.SubElement(parent, "register")
         ET.SubElement(rnew, "name").text = rname
-        ET.SubElement(rnew, "fields")
         for (key, value) in radd.items():
             if key == "fields":
+                ET.SubElement(rnew, "fields")
                 for fname in value:
                     Register(rnew).add_field(fname, value[fname])
             else:
@@ -670,9 +671,16 @@ class Peripheral:
             name = rspec[:li] + "%s" + rspec[len(rspec) - ri :]
         rtag.find("name").text = name
         self.process_register(name, rmod)
-        ET.SubElement(rtag, "dim").text = str(dim)
-        ET.SubElement(rtag, "dimIndex").text = dimIndex
-        ET.SubElement(rtag, "dimIncrement").text = hex(dimIncrement)
+        # dim/dimInc/dimInd must be added in that order to the start of the tag
+        el_dim = ET.Element("dim")
+        el_dim.text = str(dim)
+        el_diminc = ET.Element("dimIncrement")
+        el_diminc.text = hex(dimIncrement)
+        el_dimind = ET.Element("dimIndex")
+        el_dimind.text = dimIndex
+        rtag.insert(0, el_dim)
+        rtag.insert(1, el_diminc)
+        rtag.insert(2, el_dimind)
 
     def collect_in_cluster(self, cname, cmod):
         """Collect registers in peripheral into clusters."""
@@ -753,9 +761,16 @@ class Peripheral:
             offset = new_rtag.find("addressOffset")
             offset.text = hex(int(offset.text, 0) - addressOffset)
             ctag.append(new_rtag)
-        ET.SubElement(ctag, "dim").text = str(dim)
-        ET.SubElement(ctag, "dimIndex").text = dimIndex
-        ET.SubElement(ctag, "dimIncrement").text = hex(dimIncrement)
+        # dim/dimInc/dimInd must be added in that order to the start of the tag
+        el_dim = ET.Element("dim")
+        el_dim.text = str(dim)
+        el_diminc = ET.Element("dimIncrement")
+        el_diminc.text = hex(dimIncrement)
+        el_dimind = ET.Element("dimIndex")
+        el_dimind.text = dimIndex
+        ctag.insert(0, el_dim)
+        ctag.insert(1, el_diminc)
+        ctag.insert(2, el_dimind)
 
     def process_register(self, rspec, register, update_fields=True):
         """Work through a register, handling all fields."""
